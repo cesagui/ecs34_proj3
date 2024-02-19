@@ -1,4 +1,5 @@
 #include <CSVBusSystem.h>
+#include <iostream>
 
 /*
     Define a BusStop struct; this inherits publicly all of the methods from
@@ -31,12 +32,11 @@ struct BusStop: public CBusSystem::SStop{
 */
 
 struct BusRoute: public CBusSystem::SRoute {
-    std::vector<BusStop> bus_stops;
+    std::vector<CStreetMap::TNodeID> bus_stops;
     std::string name;
 
-    BusRoute(std::string n, std::vector<BusStop> stops){
+    BusRoute(std::string n){
         name = n;
-        bus_stops = stops;
     }
 
     ~BusRoute(){} // use default destructor
@@ -47,15 +47,15 @@ struct BusRoute: public CBusSystem::SRoute {
     
     CBusSystem::TStopID GetStopID(std::size_t index) const noexcept{
         if (index >= 0 && index < StopCount())
-            return bus_stops[index].ID();
+            return bus_stops[index];
         return CBusSystem::InvalidStopID;
     }
     
-    std::string get_name(){
+    std::string Name() const noexcept{
         return name;
     }
     
-    void append_stop(BusStop stop){
+    void append_stop(CStreetMap::TNodeID stop){
         bus_stops.push_back(stop);
     }
 };
@@ -73,22 +73,42 @@ struct CCSVBusSystem::SImplementation{
         std::vector<std::string> curr_row;
 
         while (!stopsrc->End()){
-            if (curr_row[0] != "stop_id"){
-                std::shared_ptr <BusStop> new_stop (new BusStop((CBusSystem::TStopID)std::stol(curr_row[0]), (CBusSystem::TStopID)std::stol(curr_row[1])));
-                bus_stops.push_back(new_stop);
-            }
+            if (stopsrc->ReadRow(curr_row)){
+                if (curr_row[0] != "stop_id"){
+                    std::shared_ptr <BusStop> new_stop (new BusStop((CBusSystem::TStopID)std::stol(curr_row[0]), (CBusSystem::TStopID)std::stol(curr_row[1])));
+                    bus_stops.push_back(new_stop);
+                }
+            }  
         }
         /*
         TODO: HANDLE ROUTE CREATION
 
-        while (!stopsrc->End()){
-            if (row[0] != "route"){
-                std::shared_ptr<BusStop> new_stop (new BusStop(CBusSystem::TStopID)std::stol(curr_row[0]), (CStreetMap::TStopID)std::stol(curr_row[1]))
-                bus_stops.push_back(new_stop)
+        //see if name of route already exists
+            std::shared_ptr<Route> route = std::dynamic_pointer_cast<Route>(RouteByName(row[0]));
+            if(route == nullptr){
+                route = std::make_shared<Route>(row[0]);
+                routes.push_back(route);
+
+            }
+            //add to route specific list of stops
+            route->addStop((CBusSystem::TStopID)std::stol(row[1]));
+        */
+        while (!routesrc->End()){
+            if (routesrc->ReadRow(curr_row)){
+                if (curr_row[0] != "route"){
+                    std::shared_ptr<BusRoute> route = std::dynamic_pointer_cast<BusRoute>(RouteByName(curr_row[0]));
+                    if (route == nullptr) {
+                        // If the route doesn't exist, create a new one
+                        route = std::make_shared<BusRoute>(curr_row[0]);
+                        bus_routes.push_back(route);
+                    }
+                    // Now, route points to a valid BusRoute object
+                    route->append_stop((CBusSystem::TStopID)std::stol(curr_row[1]));  
+                }
             }
         }
-        */
     }
+
     ~SImplementation(){} // default destructor operation
 
     std::size_t StopCount() {
@@ -98,9 +118,7 @@ struct CCSVBusSystem::SImplementation{
     std::size_t RouteCount() {
         return bus_routes.size();
     }
-    
-    // TODO: MAKE CITATION ON TERNARY OPERATOR USAGE (STACK OVERFLOW: https://stackoverflow.com/questions/24793916/shorthand-c-if-else-statement)
-    
+        
     std::shared_ptr<SStop> StopByIndex(std::size_t index) {
         if (index >= 0 && index < bus_stops.size()) {
             return bus_stops[index];
