@@ -108,9 +108,6 @@ bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata) {
     entity.DAttributes.clear();
 
     while (!DImplementation->isEnd) {
-        char buffer[1024];
-        
-        int bytesRead = 0;
         
         char temp;
 
@@ -131,13 +128,7 @@ bool CXMLReader::ReadEntity(SXMLEntity &entity, bool skipcdata) {
             DImplementation->isEnd = false;
             return true;
         }
-
-        // Checks for a selfclosing element that is in the start element
-        if (entity.DType == SXMLEntity::EType::StartElement && temp == '/') {
-            entity.DType = SXMLEntity::EType::EndElement;
-            entity.DNameData = DImplementation->currentEntity.DNameData;
-            return true;
-        }
+    
     }
 
     return false;
