@@ -54,19 +54,17 @@ struct OSMNode : public CStreetMap::SNode {
             std::size_t current_pos = 0;
 
             // iterate over unordered_map and checks if the current position matches the needed index, returns the key of the current attribute if so
-            for (const auto& pair : attributes) {
+            for (const auto &pair : attributes) {
                 if (current_pos == index) {
                     return pair.first;
                 }
 
                 current_pos += 1;
             }
-            
         }
 
         // return empty string if index not found (shouldn't occur but used to avoid compiler problems)
         return "";
-
     }
 
     // Returns whether the value is attached to SNode or not
@@ -78,6 +76,7 @@ struct OSMNode : public CStreetMap::SNode {
             has_key = true;
         }
 
+        // Returns bool value of has_key
         return has_key;
     }
 
@@ -93,7 +92,6 @@ struct OSMNode : public CStreetMap::SNode {
         else {
             return attributes.at(key);
         }
-
     }
 
 };
@@ -166,23 +164,22 @@ struct OSMWay : public CStreetMap::SWay {
 
                 current_pos += 1;
             }
-            
         }
 
         // return empty string if index not found (shouldn't occur but used to avoid compiler problems)
         return "";
-
     }
 
     // Returns whether the value is attached to SWay or not
     bool HasAttribute(const std::string &key) const noexcept override {
         bool has_key = false;
 
-        // determines whether key is found and changes the bool value to reflect the result
+        // Determines whether key is found and changes the bool value to reflect the result
         if (attributes.count(key) > 0) {
             has_key = true;
         }
 
+        // Returns bool value of has_key
         return has_key;
     }
 
@@ -198,7 +195,6 @@ struct OSMWay : public CStreetMap::SWay {
         else {
             return attributes.at(key);
         }
-
     }
 
 };
@@ -221,7 +217,141 @@ struct COpenStreetMap::SImplementation {
 
     // Function that parses OSM XML data
     void ParseXML(std::shared_ptr<CXMLReader> src) {
-    
+        SXMLEntity entity;
+        
+        // Temp storage used throughout the function in case of nested elements (nodes within ways)
+        std::shared_ptr<OSMNode> temp_node;
+        std::shared_ptr<OSMWay> temp_way;
+
+        // Parsing loop
+        while (src->ReadEntity(entity)) {
+            
+            // Handles the start of an XML element
+            if (entity.DType == SXMLEntity::EType::StartElement) {
+                
+                // Parsing a node
+                if (entity.DNameData == "node") {
+                    
+                    // Extract attributes from entity
+                    TNodeID id = 0;
+                    double lat = 0.0;
+                    double lon = 0.0;
+
+                    // Checks for attribute existence and extract the value
+                    if (entity.AttributeExists("id")) {
+                        
+                        // Converts string to long
+                        id = std::stol(entity.AttributeValue("id"));
+                    }
+
+                    if (entity.AttributeExists("lat")) {
+                        
+                        // Converts string to double
+                        lat = std::stod(entity.AttributeValue("lat"));
+                    }
+
+                    if (entity.AttributeExists("lon")) {
+                        
+                        // Converts string to double
+                        lon = std::stod(entity.AttributeValue("lon"));
+                    }
+
+                    // Create a shared pointer to OSMNode, where the specified id, lat, and lon values are dynamically allocated to an OSMNode object that is pointed to
+                    auto temp_node = std::make_shared<OSMNode>(id, lat, lon);
+                    
+                    // Adds node to a vector for sequential access
+                    osm_nodes.push_back(temp_node);
+
+                    // Inserts the node into a map, used for id based lookups 
+                    node_id_map[id]= temp_node;
+                }
+
+                // Parsing a way
+                else if (entity.DNameData == "way") {
+                    
+                    // Extract attribute from entity
+                    TWayID id = 0;
+
+                    // Checks for attribute existence and extract the value
+                    if (entity.AttributeExists("id")) {
+                        
+                        // Converts string to long
+                        id = std::stol(entity.AttributeValue("id"));
+                    }
+
+                    // Create a shared pointer to OSMWay, where the specified id is dynamically allocated to an OSMWay object that is pointed to
+                    auto temp_way = std::make_shared<OSMWay>(id);
+                    
+                    // Adds way to a vector for sequential access
+                    osm_ways.push_back(temp_way);
+
+                    // Inserts the way into a map, used for id based lookups 
+                    way_id_map[id]= temp_way;
+
+                }
+
+                // Handles node references within a way element
+                else if (entity.DNameData == "nd" && temp_way) {
+                    
+                    // Initialize node_id
+                    TNodeID node_id = 0;
+
+                    // Extract the node ID if the attribute exists
+                    if (entity.AttributeExists("ref")) {
+                        node_id = std::stol(entity.AttributeValue("ref"));
+                        
+                        // Associate node with current way
+                        temp_way->AddNode(node_id);
+                    
+                    }
+                }
+
+                // Handles tags for nodes and ways
+                else if (entity.DNameData == "tag") {
+                    
+                    // Initialize key and value strings
+                    std::string key = "";
+                    std::string value = "";
+
+                    // Check if attributes exists and extracts the key and value 
+                    if (entity.AttributeExists("k")) {
+                        key = entity.AttributeValue("k");
+                    }
+
+                    if (entity.AttributeExists("v")) {
+                        value = entity.AttributeValue("v");
+                    }
+
+                    // Checks if we are contextually parsing a node or way and adds the tag accordingly with the current node or way
+                    if (temp_node) {
+                        temp_node->AddTag(key, value);
+                    }
+
+                    if (temp_way) {
+                        temp_way->AddTag(key, value);
+                    }
+
+                }
+            }
+
+            // Handles the end of an XML element
+            else if (entity.DType == SXMLEntity::EType::EndElement) {
+                
+                // Finalize node parsing
+                if (entity.DNameData == "node") {
+                    
+                    // reset temp_node as it has been added to osm_nodes and node_id_map, prep for next element
+                    temp_node.reset();
+                }
+
+                // Finalize way parsing
+                else if (entity.DNameData == "way") {
+                    
+                    // reset temp_way as it has been added to osm_ways and way_id_map, prep for next element
+                    temp_way.reset();
+                }
+            }
+        }
     }
 
     // Default destructor operation
@@ -250,7 +380,6 @@ struct COpenStreetMap::SImplementation {
             return osm_nodes[index];
 
         }
-
     }
 
     // Returns the SNode with the id of id
@@ -265,7 +394,6 @@ struct COpenStreetMap::SImplementation {
         else {
             return node_id_map.at(id);
         }
-
     }
 
     // Returns the SWay associated with index
@@ -280,7 +408,6 @@ struct COpenStreetMap::SImplementation {
         else {
             return osm_ways[index];
         }
-
     }
 
     // Returns the SWay with the id of id
@@ -295,7 +422,6 @@ struct COpenStreetMap::SImplementation {
         else {
             return way_id_map.at(id);
         }
-    
     }
 
 };
