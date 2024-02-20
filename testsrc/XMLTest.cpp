@@ -7,7 +7,7 @@
 #include <memory>
 #include <expat.h>
 
-// the following test was pasted from Figure 1.
+// the following test was pasted from figure 1
 
 TEST(XMLReaderTest, ReadCompleteElement) {
     auto InputStream = std::make_shared<CStringDataSource>("<example attr=\"Hello World\"></example>");
