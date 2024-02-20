@@ -203,16 +203,114 @@ struct OSMWay : public CStreetMap::SWay {
 
 };
 
+// SImplementation struct defined here, details and methods are encapsulated and hidden from users
 struct COpenStreetMap::SImplementation {
+    
+    std::vector<std::shared_ptr<OSMNode>> osm_nodes;
+    
+    std::vector<std::shared_ptr<OSMWay>> osm_ways;
+
+    std::unordered_map<TNodeID, std::shared_ptr<OSMNode>> node_id_map;
+
+    std::unordered_map<TWayID, std::shared_ptr<OSMWay>> way_id_map;
+
+    // Constructor that initializes the implementation by parsing the XML source
+    explicit SImplementation(std::shared_ptr<CXMLReader> src) {
+        ParseXML(src);
+    }
+
+    // Function that parses OSM XML data
+    void ParseXML(std::shared_ptr<CXMLReader> src) {
+    
+    }
+
+    // Default destructor operation
+    ~SImplementation() {} 
+
+    // Returns the number of nodes in the map
+    std::size_t NodeCount() const noexcept {
+        return osm_nodes.size();
+    }
+
+    // Returns the number of ways in the map
+    std::size_t WayCount() const noexcept {
+        return osm_ways.size();
+    }
+
+    // Returns SNode associated with index
+    std::shared_ptr<CStreetMap::SNode> NodeByIndex(std::size_t index) const noexcept {
+
+        // Return a null pointer if index is greater than or equal to NodeCount()
+        if (index >= osm_nodes.size()) {
+            return nullptr;
+        }
+
+        // Else return the SNode associated with the index
+        else {
+            return osm_nodes[index];
+
+        }
+
+    }
+
+    // Returns the SNode with the id of id
+    std::shared_ptr<CStreetMap::SNode> NodeByID(TNodeID id) const noexcept {
+        
+        // Returns a null pointer if the id doesn't exist
+        if (node_id_map.count(id) == 0) {
+            return nullptr;
+        }
+
+        // Returns SNode with the id of id
+        else {
+            return node_id_map.at(id);
+        }
+
+    }
+
+    // Returns the SWay associated with index
+    std::shared_ptr<CStreetMap::SWay> WayByIndex(std::size_t index) const noexcept {
+        
+        // Returns a null pointer if the index is greater than or equal to WayCount()
+        if (index >= osm_ways.size()) {
+            return nullptr;
+        }
+
+        // Else return the SWay associated with index
+        else {
+            return osm_ways[index];
+        }
+
+    }
+
+    // Returns the SWay with the id of id
+    std::shared_ptr<CStreetMap::SWay> WayByID(TWayID id) const noexcept {
+
+        // Returns a null pointer if the id doesn't exist
+        if (way_id_map.count(id) == 0) {
+            return nullptr;
+        }
+
+        // Else returns SWay with the id of id
+        else {
+            return way_id_map.at(id);
+        }
+    
+    }
 
 };
 
+// Constructor for Open Street Map
 COpenStreetMap::COpenStreetMap(std::shared_ptr<CXMLReader> src) {
 
 }
 
+// Default destructor operation
 COpenStreetMap::~COpenStreetMap() {}
 
+
+
+ 
 std::size_t NodeCount() const noexcept override {
 
 }
