@@ -28,6 +28,11 @@ struct OSMNode : public CStreetMap::SNode {
     // utilizes default destructor
     ~OSMNode() = default; 
 
+    // Implementation of AddTag method used later in ParseXML
+    void AddTag(const std::string &key, const std::string &value) {
+        attributes[key] = value;
+    }
+
     // Returns id of the SNode
     CStreetMap::TNodeID ID() const noexcept override {
         return tnode_id;
@@ -104,17 +109,30 @@ struct OSMNode : public CStreetMap::SNode {
 
 struct OSMWay : public CStreetMap::SWay {
     
+    // Unique identifier for way in OpenStreetMap data
     CStreetMap::TWayID tway_id;
 
+    // Collection of node IDs that form path of the way, ordered so it determines shape of way
     std::vector<CStreetMap::TNodeID> node_id;
 
     // store attributes as key-value pair
     std::unordered_map<std::string, std::string> attributes; 
 
-    OSMWay(CStreetMap::TWay id) : tway_id(id) {}
+    // Constructor where OSMWay initialized with unique ID, @param id
+    OSMWay(CStreetMap::TWayID id) : tway_id(id) {}
 
     // utilizes default destructor
     ~OSMWay() = default; 
+
+    // Implementation of AddTag method used later in ParseXML
+    void AddTag(const std::string &key, const std::string &value) {
+        attributes[key] = value;
+    }
+
+    // Implementation of AddNode method used later in ParseXML
+    void AddNode(CStreetMap::TNodeID node_id) {
+        this->node_id.push_back(node_id);
+    }
 
     // Returns the id of the SWay
     CStreetMap::TWayID ID() const noexcept override {
@@ -127,11 +145,11 @@ struct OSMWay : public CStreetMap::SWay {
     }
 
     // Returns the node id of the node at the index
-    TNodeID GetNodeID(std::size_t index) const noexcept override {
+    CStreetMap::TNodeID GetNodeID(std::size_t index) const noexcept override {
         
         // Returns InvalidNodeID if the index is greater than or equal to NodeCount()
         if (index >= node_id.size()) {
-            return InvalidNodeID;
+            return CStreetMap::InvalidNodeID;
         }
 
         // Else the node id of the node at the index is returned
@@ -260,7 +278,7 @@ struct COpenStreetMap::SImplementation {
                     }
 
                     // Create a shared pointer to OSMNode, where the specified id, lat, and lon values are dynamically allocated to an OSMNode object that is pointed to
-                    auto temp_node = std::make_shared<OSMNode>(id, lat, lon);
+                    temp_node = std::make_shared<OSMNode>(id, CStreetMap::TLocation(lat, lon));
                     
                     // Adds node to a vector for sequential access
                     osm_nodes.push_back(temp_node);
@@ -283,7 +301,7 @@ struct COpenStreetMap::SImplementation {
                     }
 
                     // Create a shared pointer to OSMWay, where the specified id is dynamically allocated to an OSMWay object that is pointed to
-                    auto temp_way = std::make_shared<OSMWay>(id);
+                    temp_way = std::make_shared<OSMWay>(id);
                     
                     // Adds way to a vector for sequential access
                     osm_ways.push_back(temp_way);
@@ -436,31 +454,31 @@ COpenStreetMap::COpenStreetMap(std::shared_ptr<CXMLReader> src) : DImplementatio
 COpenStreetMap::~COpenStreetMap() {}
 
 // Returns total number of nodes stored in the OpenStreetMap data 
-std::size_t NodeCount() const noexcept override {
+std::size_t COpenStreetMap::NodeCount() const noexcept {
     return DImplementation->NodeCount();
 }
 
 // Returns total number of ways stored in the OpenStreetMap data
-std::size_t WayCount() const noexcept override {
+std::size_t COpenStreetMap::WayCount() const noexcept {
     return DImplementation->WayCount();
 }
 
 // Gets node by index in the collection of nodes and returns the shared pointer that points to it
-std::shared_ptr<CStreetMap::SNode> COpenStreetMap::NodeByIndex(std::size_t index) const noexcept override {
+std::shared_ptr<CStreetMap::SNode> COpenStreetMap::NodeByIndex(std::size_t index) const noexcept {
     return DImplementation->NodeByIndex(index);
 }
 
 // Gets node by its ID and returns the shared pointer that points to it
-std::shared_ptr<CStreetMap::SNode> COpenStreetMap::NodeByID(TNodeID id) const noexcept override {
+std::shared_ptr<CStreetMap::SNode> COpenStreetMap::NodeByID(TNodeID id) const noexcept {
     return DImplementation->NodeByID(id);
 }
 
 // Gets way by index in the collection of ways and returns the shraed pointer that points to it
-std::shared_ptr<CStreetMap::SWay> COpenStreetMap::WayByIndex(std::size_t index) const noexcept override {
+std::shared_ptr<CStreetMap::SWay> COpenStreetMap::WayByIndex(std::size_t index) const noexcept {
     return DImplementation->WayByIndex(index);
 }
 
 // Gets way by its ID and returns the shared pointer that points to it
-std::shared_ptr<CStreetMap::SWay> COpenStreetMap::WayByID(TWayID id) const noexcept override {
+std::shared_ptr<CStreetMap::SWay> COpenStreetMap::WayByID(TWayID id) const noexcept {
     return DImplementation->WayByID(id);
 }
