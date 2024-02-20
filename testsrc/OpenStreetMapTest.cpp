@@ -3,6 +3,8 @@
 #include "StringDataSource.h"
 #include "OpenStreetMap.h"
 
+// the following test was pasted from piazza Project 3 Example/Start Google Tests
+
 TEST(OpenStreetMap, SimpleExampleTest){
     auto InStream = std::make_shared<CStringDataSource>("<?xml version='1.0' encoding='UTF-8'?>"
                                                         "<osm version=\"0.6\" generator=\"osmconvert 0.8.5\">"
