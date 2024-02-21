@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <string>
+#include <sstream>
 #include <cstddef>
 #include <unordered_map>
 
@@ -130,8 +132,8 @@ struct OSMWay : public CStreetMap::SWay {
     }
 
     // Implementation of AddNode method used later in ParseXML
-    void AddNode(CStreetMap::TNodeID node_id) {
-        this->node_id.push_back(node_id);
+    void AddNode(CStreetMap::TNodeID nodeID) {
+        node_id.push_back(nodeID);
     }
 
     // Returns the id of the SWay
@@ -246,13 +248,13 @@ struct COpenStreetMap::SImplementation {
 
         // Parsing loop
         while (src->ReadEntity(entity)) {
-            
+                        
             // Handles the start of an XML element
             if (entity.DType == SXMLEntity::EType::StartElement) {
                 
                 // Parsing a node
                 if (entity.DNameData == "node") {
-                    
+
                     // Extract attributes from entity
                     TNodeID id = 0;
                     double lat = 0.0;
@@ -276,7 +278,7 @@ struct COpenStreetMap::SImplementation {
                         // Converts string to double
                         lon = std::stod(entity.AttributeValue("lon"));
                     }
-
+                       
                     // Create a shared pointer to OSMNode, where the specified id, lat, and lon values are dynamically allocated to an OSMNode object that is pointed to
                     temp_node = std::make_shared<OSMNode>(id, CStreetMap::TLocation(lat, lon));
                     
@@ -285,6 +287,8 @@ struct COpenStreetMap::SImplementation {
 
                     // Inserts the node into a map, used for id based lookups 
                     node_id_map[id]= temp_node;
+
+
                 }
 
                 // Parsing a way
@@ -321,9 +325,10 @@ struct COpenStreetMap::SImplementation {
                     if (entity.AttributeExists("ref")) {
                         node_id = std::stol(entity.AttributeValue("ref"));
                         
+                        if (temp_way) {
                         // Associate node with current way
-                        temp_way->AddNode(node_id);
-                    
+                            temp_way->AddNode(node_id);
+                        }
                     }
                 }
 
@@ -370,6 +375,7 @@ struct COpenStreetMap::SImplementation {
                     
                     // reset temp_way as it has been added to osm_ways and way_id_map, prep for next element
                     temp_way.reset();
+                
                 }
             }
         }
@@ -391,14 +397,14 @@ struct COpenStreetMap::SImplementation {
     // Returns SNode associated with index
     std::shared_ptr<CStreetMap::SNode> NodeByIndex(std::size_t index) const noexcept {
 
-        // Return a null pointer if index is greater than or equal to NodeCount()
-        if (index >= osm_nodes.size()) {
-            return nullptr;
+        // Return the SNode associated with the index
+        if (index < osm_nodes.size()) {
+            return osm_nodes[index];
         }
 
-        // Else return the SNode associated with the index
+        // Else return a null pointer if index is greater than or equal to NodeCount()
         else {
-            return osm_nodes[index];
+            return nullptr;
 
         }
     }
@@ -420,14 +426,14 @@ struct COpenStreetMap::SImplementation {
     // Returns the SWay associated with index
     std::shared_ptr<CStreetMap::SWay> WayByIndex(std::size_t index) const noexcept {
         
-        // Returns a null pointer if the index is greater than or equal to WayCount()
-        if (index >= osm_ways.size()) {
-            return nullptr;
+        // Return the SWay associated with the index
+        if (index < osm_ways.size()) {
+            return osm_ways[index];
         }
 
-        // Else return the SWay associated with index
+        // Else return a null pointer if index is greater than or equal to NodeCount()
         else {
-            return osm_ways[index];
+            return nullptr;
         }
     }
 
