@@ -1416,4 +1416,159 @@ to OSMNode and
 
 to OSMWay as suggested by the response in order to define methods in OMSNode and OSMWay so that they are usable in the ParseXML method in struct SImplementation, specifically use this-> to differentiate the member variable and function paramter to make sure node_id and node_id are differentiated in void AddNode so there are no errors 
 
+Prompt:
+besides testing for cases with many nodes or nodes that has tags, what else could I test for?
+
+Response:
+Testing for a complex system like an OpenStreetMap parser involves covering a variety of scenarios to ensure robustness and correctness. Here are additional test cases you could consider to further validate your implementation:
+
+1. Way with Multiple References
+Verify that a way element correctly references multiple node IDs, ensuring both the way and its node references are parsed correctly.
+
+cpp
+Copy code
+TEST(OpenStreetMap, WayWithMultipleNodeReferences) {
+    // XML data includes a way with multiple node references
+    // Test verifies that the way and its references are correctly parsed
+}
+2. Missing Attributes
+Test how your parser handles nodes or ways with missing but required attributes (e.g., a node without a latitude or longitude).
+
+cpp
+Copy code
+TEST(OpenStreetMap, NodeWithMissingAttributes) {
+    // XML data includes a node with missing lat or lon attributes
+    // Test verifies that the parser handles missing attributes gracefully
+}
+3. Invalid XML Structure
+Ensure your parser can handle or report errors for invalid XML structures, such as a <way> tag missing its closing tag or nodes defined outside the root <osm> tag.
+
+cpp
+Copy code
+TEST(OpenStreetMap, InvalidXMLStructure) {
+    // XML data is intentionally malformed
+    // Test verifies that the parser can handle or report structural errors
+}
+4. Empty Tags
+Check how the parser deals with empty tags or tags with empty keys/values, ensuring they don't cause crashes or incorrect parsing outcomes.
+
+cpp
+Copy code
+TEST(OpenStreetMap, NodeWithEmptyTags) {
+    // XML data includes a node with empty tags or tags with empty keys/values
+    // Test verifies the parser's handling of empty tag data
+}
+5. Large Dataset Parsing
+Test the parser with a significantly large dataset to assess performance and memory management.
+
+cpp
+Copy code
+TEST(OpenStreetMap, LargeDatasetParsing) {
+    // Use a large OSM XML dataset
+    // Test verifies that the parser can handle large datasets without performance degradation or memory issues
+}
+6. Special Characters in Attributes
+Ensure that the parser correctly handles special characters in XML attributes, such as quotes, ampersands, or less-than/greater-than signs within tag keys or values.
+
+cpp
+Copy code
+TEST(OpenStreetMap, SpecialCharactersInAttributes) {
+    // XML data includes tags with special characters in keys or values
+    // Test verifies correct parsing and encoding of special characters
+}
+7. Multiple Ways and Nodes
+Verify correct parsing when the XML includes a mix of multiple node and way elements, ensuring relationships (like ways referring to nodes) are maintained.
+
+cpp
+Copy code
+TEST(OpenStreetMap, MultipleWaysAndNodes) {
+    // XML data includes a complex mix of nodes and ways
+    // Test verifies correct parsing and association between ways and their referenced nodes
+}
+8. Tag Parsing within Ways
+Check that tags within ways are parsed correctly, ensuring way-specific information (like names or highway types) is accurately captured.
+
+cpp
+Copy code
+TEST(OpenStreetMap, WayTagsParsing) {
+    // XML data includes ways with various tags
+    // Test verifies that way tags are correctly parsed and associated with the correct way
+}
+Each of these test cases aims to probe different aspects of your OSM parser's functionality, from handling edge cases to ensuring performance and correctness with varied and complex data.
+
+Changes and rationale: Created the structure for TEST(OpenStreetMap, ManyWaysAndNodesTest){} and TEST(OpenStreetMap, WaysWithManyNodeReferencesTest){} tests to increase variety of test cases to ensure the robustness of the source file
+
+Prompt:
+what are the needed data contents of the WaysWithManyNodeReferencesTest for the test to properly test for what is desired? Could you provide an example?
+
+Response:
+
+For the WaysWithManyNodeReferencesTest, the goal is to ensure that the parser correctly handles ways that reference multiple nodes. This involves verifying that the parser can:
+
+Identify and Parse Node Elements: Recognize and correctly parse individual node elements from the XML, including their id, lat (latitude), and lon (longitude) attributes.
+Identify and Parse Way Elements: Recognize and correctly parse way elements, especially their id and the references to nodes through nd ref elements.
+Associate Nodes with Ways: Accurately associate the referenced nodes with their corresponding ways, ensuring that the way contains the correct sequence of node references.
+Parse Tags within Ways: Optionally, if the way includes tags (metadata), ensure these are also parsed and associated with the way correctly.
+Needed Data Contents:
+To construct a test that adequately checks these aspects, your test OSM XML snippet should include:
+
+Multiple Node Elements: Define several node elements, each with unique id, lat, and lon attributes. These nodes will be referenced by a way element in the XML.
+xml
+Copy code
+<node id="1" lat="38.8977" lon="-77.0365"/>
+<node id="2" lat="38.8978" lon="-77.0366"/>
+<node id="3" lat="38.8979" lon="-77.0367"/>
+A Way Element with Node References: Include a way element that references the previously defined nodes. Ensure the way contains multiple nd elements, each with a ref attribute pointing to the id of one of the nodes.
+xml
+Copy code
+<way id="100">
+    <nd ref="1"/>
+    <nd ref="2"/>
+    <nd ref="3"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="Main Street"/>
+</way>
+Tags for Additional Metadata (Optional): To further test the parser's capabilities, include some tag elements within the way to define properties like the way's name or type.
+Example XML Snippet:
+Combining the above requirements, an example XML snippet for the WaysWithManyNodeReferencesTest could look like this:
+
+xml
+Copy code
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="osmconvert 0.8.5">
+    <node id="1" lat="38.8977" lon="-77.0365"/>
+    <node id="2" lat="38.8978" lon="-77.0366"/>
+    <node id="3" lat="38.8979" lon="-77.0367"/>
+    <way id="100">
+        <nd ref="1"/>
+        <nd ref="2"/>
+        <nd ref="3"/>
+        <tag k="highway" v="residential"/>
+        <tag k="name" v="Main Street"/>
+    </way>
+</osm>
+Test Construction:
+Using this XML snippet, your test should:
+
+Load the XML into the parser.
+Verify that the NodeCount matches the number of node elements defined.
+Verify that the WayCount matches the number of way elements defined.
+For the specific way tested, verify that NodeCount within the way matches the number of nd ref elements.
+Verify the correct sequence of node IDs in the way's references.
+Optionally, check the values of specific tags within the way to ensure they are parsed correctly.
+This approach ensures the test comprehensively evaluates the parser's ability to handle ways with multiple node references, an essential feature for accurately interpreting OSM data.
+
+Changes and rationale: Used the given code as a model to create this part of the test using data 
+
+    auto InStream = std::make_shared<CStringDataSource>("<?xml version='1.0' encoding='UTF-8'?>"
+                                                        "<osm version=\"0.6\" generator=\"osmconvert 0.8.5\">"
+                                                        "<node id=\"62224365\" lat=\"38.5278374\" lon=\"-121.7588672\"/>"
+                                                        "<node id=\"62224369\" lat=\"38.5284058\" lon=\"-121.7577639\"/>"
+                                                        "<way id=\"10746725\">"
+                                                        "<nd ref=\"62224365\"/>"
+                                                        "<nd ref=\"62224369\"/>"
+                                                        "<tag k=\"highway\" v=\"residential\"/>"
+                                                        "<tag k=\"name\" v=\"El Macero Drive\"/>"
+                                                        "</way>"
+                                                        "</osm>");
 
