@@ -4,31 +4,6 @@
 #include "CSVBusSystem.h"
 
 /*
-The CCSVBusSystem class you will be developing will implement the CBusSystem abstract
-interface. There are two struct abstract interfaces that are part of the CBusSystem, that will need
-to be implemented as well (SStop and SRoute). The bus system is a collection of stops, and
-routes. Each route is a set of stops that specifies the locations where the bus stops on the route.
-
-SStop: stop_id : int, node_id: int
-SRoute: collection SStop's reported by stop_id 
-
-TODO:
-ADD MARKDOWN FILES for these classes
-ADD TESTS FOR:
-    BusStop struct
-    BusRoute struct
-    GetStopID method in CCSVBusSystem
-*/
-
-/*
-    BusStop TESTS
-*/
-
-/*
-    BusRoute TESTS
-*/
-
-/*
     BusSystem TESTS
 */
 TEST(CCSVBusSystem, TestEmptyStops){
@@ -80,4 +55,7 @@ TEST(CCSVBusSystem, MultiTest){
     CCSVBusSystem BusSystem = CCSVBusSystem(stop_reader, route_reader);
     EXPECT_EQ(BusSystem.StopCount(),19);
     EXPECT_EQ(BusSystem.RouteCount(),2);
+    EXPECT_EQ(BusSystem.StopByIndex(0)->ID(), 22043); 
+    EXPECT_EQ(BusSystem.StopByID(22043)->NodeID(), 2849810514);
+    EXPECT_EQ(BusSystem.RouteByIndex(0)->Name(), "A");
 }
